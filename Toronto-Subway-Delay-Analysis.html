@@ -9,9 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Avi Walia" />
 
+<meta name="date" content="2025-03-10" />
 
-<title>Midterm</title>
+<title>Toronto Subway Delay Analysis: Causes, Timing, and Line-Specific Patterns</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -348,12 +350,14 @@ display: none;
 
 
 
+<h1 class="title toc-ignore">Toronto Subway Delay Analysis: Causes,
+Timing, and Line-Specific Patterns</h1>
+<h4 class="author">Avi Walia</h4>
+<h4 class="date">March 10, 2025</h4>
 
 </div>
 
 
-<p>Toronto Subway Delay Analysis: Causes, Timing, and Line-Specific
-Patterns ================ Avi Walia March 10, 2025</p>
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
 <p>The Toronto Transit Commission (TTC) subway system is a critical part
@@ -382,19 +386,18 @@ most and longest delays on this line since they are the most crowded
 stations in terms of ridership.</li>
 </ul>
 <p>To address these questions and test the hypotheses, we will utilize
-the TTC subway Delay Data provided by the City of Toronto’s Open Data
+the TTC Subway Delay Data provided by the City of Toronto’s Open Data
 portal. The dataset contains detailed information on delay incidents for
 the year 2024, including:</p>
 <ul>
-<li><strong>Delay Codes</strong></li>
+<li><strong>Delay Codes</strong> and their descriptions indicating the
+reasons for delays.</li>
 <li><strong>Time Stamp Information</strong> such as date, time, and day
-of the week</li>
+of the week.</li>
 <li><strong>Location Details</strong> including the station and subway
-line affected</li>
-<li><strong>Duration of Delays</strong> measured in minutes</li>
+line affected.</li>
+<li><strong>Duration of Delays</strong> measured in minutes.</li>
 </ul>
-<p>There is also another data set that includes metadata explaining the
-description of each delay code.</p>
 <p>The data was acquired using the City’s Open Data API. By exploring
 and analyzing this dataset, we seek to identify patterns and trends in
 delay causes, assess peak times for delays, and determine if specific

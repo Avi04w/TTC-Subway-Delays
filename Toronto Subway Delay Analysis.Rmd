@@ -3,10 +3,10 @@ title: "Toronto Subway Delay Analysis: Causes, Timing, and Line-Specific Pattern
 author: "Avi Walia"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output: 
-  github_document:
-    df_print: paged
   html_document: 
     fig_width: 10
+  github_document:
+    df_print: paged
 ---
 
 ```{r setup, echo=FALSE}
@@ -50,14 +50,12 @@ This study aims to investigate the following questions:
 * **Hypothesis 2:** Delays are more frequent during peak hours (7-9 AM and 4-6 PM) compared to non-peak hours.
 * **Hypothesis 3:** The Yonge-University line experiences more frequent delays than other lines due to higher passenger volumes and longer track lengths. Bloor-Yonge and Union stations will have the most and longest delays on this line since they are the most crowded stations in terms of ridership.
 
-To address these questions and test the hypotheses, we will utilize the TTC subway Delay Data provided by the City of Toronto's Open Data portal. The dataset contains detailed information on delay incidents for the year 2024, including:
+To address these questions and test the hypotheses, we will utilize the TTC Subway Delay Data provided by the City of Toronto's Open Data portal. The dataset contains detailed information on delay incidents for the year 2024, including:
 
-* **Delay Codes**
-* **Time Stamp Information** such as date, time, and day of the week
-* **Location Details** including the station and subway line affected
-* **Duration of Delays** measured in minutes
-
-There is also another data set that includes metadata explaining the description of each delay code.
+* **Delay Codes** and their descriptions indicating the reasons for delays.
+* **Time Stamp Information** such as date, time, and day of the week.
+* **Location Details** including the station and subway line affected.
+* **Duration of Delays** measured in minutes.
 
 The data was acquired using the City's Open Data API. By exploring and analyzing this dataset, we seek to identify patterns and trends in delay causes, assess peak times for delays, and determine if specific lines and/or stations are more prone to certain types of delays. This analysis will inform potential strategies for mitigating delays and improving the TTC's operational efficiency.
 

@@ -32,17 +32,15 @@ This study aims to investigate the following questions:
   in terms of ridership.
 
 To address these questions and test the hypotheses, we will utilize the
-TTC subway Delay Data provided by the City of Toronto’s Open Data
+TTC Subway Delay Data provided by the City of Toronto’s Open Data
 portal. The dataset contains detailed information on delay incidents for
 the year 2024, including:
 
-- **Delay Codes**
-- **Time Stamp Information** such as date, time, and day of the week
-- **Location Details** including the station and subway line affected
-- **Duration of Delays** measured in minutes
-
-There is also another data set that includes metadata explaining the
-description of each delay code.
+- **Delay Codes** and their descriptions indicating the reasons for
+  delays.
+- **Time Stamp Information** such as date, time, and day of the week.
+- **Location Details** including the station and subway line affected.
+- **Duration of Delays** measured in minutes.
 
 The data was acquired using the City’s Open Data API. By exploring and
 analyzing this dataset, we seek to identify patterns and trends in delay
