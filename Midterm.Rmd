@@ -1,0 +1,21 @@
+---
+title: "Toronto Subway Delay Analysis: Causes, Timing, and Line-Specific Patterns"
+author: "Avi Walia"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  github_document:
+    df_print: paged
+  html_document: 
+    fig_width: 10
+    highlight: tango
+    theme: paper
+    css: "style.css"
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(eval=T, echo=F, warning=F, message=F)
+```
+
+```{r}
+library(opendatatoronto)
+```
