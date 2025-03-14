@@ -5,9 +5,9 @@ date: "March 14, 2025"
 output:
   github_document:
     df_print: paged
-  pdf_document:
-    fig_width: 10
   html_document:
+    fig_width: 10
+  pdf_document:
     fig_width: 10
 ---
 
@@ -205,6 +205,7 @@ ggplot(delay_causes, aes(area = Count, fill = Count, label = paste(`Code Descrip
   theme_minimal() +
   theme(legend.position = "none", plot.title = element_text(hjust = 0.5, face = "bold", size = 16))
 ```
+
 The top reasons for subway delays in Toronto seem to be passenger-related incidents, with "Disorderly Patron" being the most frequent cause, accounting for 157 delays with an average delay of 6.85 minutes. Other notable causes include Passenger Assistance Alarm Activation (72 delays, 4.11 min avg) and OPTO (COMMS) Train Door Monitoring (50 delays, 6.9 min avg).
 
 We can also look at which delays took the most time total:

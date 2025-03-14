@@ -174,6 +174,7 @@ occurring at stations.
 Top 10 Most Frequent Delay Causes
 
 ![](Toronto-Subway-Delay-Analysis_files/figure-gfm/treemap-delay-causes-1.png)<!-- -->
+
 The top reasons for subway delays in Toronto seem to be
 passenger-related incidents, with “Disorderly Patron” being the most
 frequent cause, accounting for 157 delays with an average delay of 6.85
