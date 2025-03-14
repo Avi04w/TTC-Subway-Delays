@@ -1,24 +1,28 @@
 ---
 title: "Toronto Subway Delay Analysis: Causes, Timing, and Line-Specific Patterns"
 author: "Avi Walia"
-date: '`r format(Sys.Date(), "%B %d, %Y")`'
-output: 
-  html_document: 
-    fig_width: 10
+date: "March 14, 2025"
+output:
   github_document:
     df_print: paged
+  pdf_document:
+    fig_width: 10
+  html_document:
+    fig_width: 10
 ---
+
+[GitHub Repository: Avi04w/TTC-Subway-Delays](https://github.com/Avi04w/TTC-Subway-Delays)
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(eval=T, echo=F, warning=F, message=F)
 ```
 
-```{r}
+```{r api-call}
 library(opendatatoronto)
 library(dplyr)
 
 package <- show_package("996cfe8d-fb35-40ce-b569-698d51fc683b")
-resources <- list_package_resources(package)
+resources <- list_package_resources("996cfe8d-fb35-40ce-b569-698d51fc683b")
 
 subway_code_data <- resources |> 
   head(1) |> 
@@ -42,12 +46,12 @@ The Toronto Transit Commission (TTC) subway system is a critical part of Toronto
 This study aims to investigate the following questions:
 
 1. What are the primary causes of subway delays in Toronto?
-2. How do these delays vary by time of day and subway line/station?
+2. How do these delays vary by subway line/station?
 
 **Hypothesis:**
 
 * **Hypothesis 1:** Mechanical issues are the most common causes of subway delays in Toronto.
-* **Hypothesis 2:** Delays are more frequent during peak hours (7-9 AM and 4-6 PM) compared to non-peak hours.
+* **Hypothesis 2:** Delays are more frequent during peak hours (7-9 AM and 3-7 PM) compared to non-peak hours.
 * **Hypothesis 3:** The Yonge-University line experiences more frequent delays than other lines due to higher passenger volumes and longer track lengths. Bloor-Yonge and Union stations will have the most and longest delays on this line since they are the most crowded stations in terms of ridership.
 
 To address these questions and test the hypotheses, we will utilize the TTC Subway Delay Data provided by the City of Toronto's Open Data portal. The dataset contains detailed information on delay incidents for the year 2024, including:
@@ -59,6 +63,236 @@ To address these questions and test the hypotheses, we will utilize the TTC Subw
 
 The data was acquired using the City's Open Data API. By exploring and analyzing this dataset, we seek to identify patterns and trends in delay causes, assess peak times for delays, and determine if specific lines and/or stations are more prone to certain types of delays. This analysis will inform potential strategies for mitigating delays and improving the TTC's operational efficiency.
 
+```{r data-cleaning}
+library(lubridate)
 
+subway_data$Date <- as.Date(subway_data$Date, format = "%Y-%m-%d")
+subway_data$Time <- paste0(subway_data$Time, ":00")
+subway_data$Time <- hms::as_hms(subway_data$Time)
 
+subway_data <- subway_data |> 
+  filter(`Min Delay` != "None")
 
+colnames(subway_data)[colnames(subway_data) == "_id"] <- "ID"
+
+subway_data$`Min Delay` <- as.integer(subway_data$`Min Delay`)
+
+subway_data <- subway_data |> 
+  filter(`Min Delay` != 360)
+
+subway_data <- subway_data |> 
+  filter(!grepl("TO |TOWARD|UNION STATION.|TAIL| - ", Station, ignore.case = TRUE))
+
+subway_data$Hour <- hour(subway_data$Time)
+subway_data <- subway_data |> 
+  mutate(`Time Category` = case_when(
+    Hour %in% c(7, 8, 9, 15, 16, 17, 18, 19) ~ "Peak",
+    TRUE ~ "Non-Peak"
+  ))
+
+```
+
+# Methods
+
+### Data Acquisition
+The dataset used in this analysis was obtained from the City of Toronto Open Data Portal using the Open Data API. The data includes all recorded subway delays in Toronto for th year 2024, along with the delay codes, time, location, and other metadata. Additionally, a delay code definitions dataset was obtained from the same API and this was merged with the original data to provide description of each delay type.
+
+The extracted data includes:
+
+* **Time Stamp Information** (Date, Time, Day of Week, Hour of Delay)
+* **Location Details** (Station, Subway Line, Direction of Train)
+* **Delay Duration** (Minutes Delayed)
+* **Delay Cause** (Codes and Descriptions)
+* **Subway Car Details** (Vehicle ID)
+
+### Data Cleaning and Wrangling
+Several process steps were applied to clean and prepare the data for analysis.
+
+1. **Filtering Out Non-Delays and Multi-Station Delays**
+    * Some records had a delay of 0 minutes (or None). We are not interested in these incidents as they do not actually effect commute times for riders. This removed many of the columns with missing values.
+    * Some delays were TTC wide or spanned multiple stations. We did not include these as there is no way to pinpoint the cause of these delays. This was done using REGEX to remove values that included "TO ", "TOWARD", or "-".
+2. **Handling Missing Values:**
+    * The rest of the columns with missing information were removed.
+3. **Column Type Formatting:**
+    * The Minutes Delayed was a char column, this was converted to int
+    * The Time column was originally formatted as **HH:MM** and was converted to hms.
+    * The Date column was converted from a character to Datetime.
+    * An extra categorical column was added, distinguishing between peak and non-peak times.
+4. **Merging Delay Codes Information**
+    * The delay codes were matched with their corresponding descriptions from the delay code definitions dataset. 
+5. **Erroneous Data and Outliers**
+    * There is some data that was incorrectly inputted. One such example is that Warden station is once listed as being on the Yonge-University Line when it is actually on the Bloor-Danforth Line. 
+    * There is a delay that lasted 6 hours that started at 4am. This is a massive outlier that occurred when the trains were not even running. We can ignore this point as it is not indicative of any trends that we are trying to find.
+
+There are 788 observations and 14 variables for each observation.
+
+### Exploratory Data Analysis (EDA)
+To understand the nature of the subway delays, the following initial analyses were performed:
+
+* **Summary Statistics:**
+    * Calculated the total number of delays and average delay duration at each station.
+    * Identified the most common delay causes and their frequency.
+* **Visualizations:**
+    * **Treemap:** Delay reasons visualized in proportional blocks.
+    * **Bar Chart:** Number of delays per subway line and station.
+* **Time-Based Analysis:**
+    * Created peak (7-9 AM, 3-7 PM) vs non-peak delay summaries.
+    * Examined how delay frequencies change by the hour.
+
+# Prelimary Results
+
+We can first look at the total delays and average delay duration by station:
+
+```{r summary-stats-delays-stations}
+library(knitr)
+
+station_summary <- subway_data |> 
+  group_by(Station) |> 
+  summarise(
+    `Total Delays` = n(),
+    `Average Delay Time` = mean(`Min Delay`)
+  ) |> 
+  arrange(desc(`Total Delays`))
+
+kable(head(station_summary, 10), caption = "Top 10 Stations with Most Delays")
+```
+```{r barchart-delays-stations}
+library(ggplot2)
+
+station_delays <- subway_data |> 
+  group_by(Station, Line) |> 
+  summarise(Total_Delays = n(), .groups = "drop") |> 
+  arrange(desc(Total_Delays)) |> 
+  head(20)
+
+ggplot(station_delays, aes(x = reorder(Station, Total_Delays), y = Total_Delays, fill = Line)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(
+    title = "Total Number of Delays per Subway Station",
+    x = "Subway Station",
+    y = "Number of Delays",
+    fill = "Subway Line",
+    caption = "Figure 1: Data From City of Toronto Open Data Portal"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+From this, we can see that Kipling, Bloor, Kennedy, Eglinton, Finch, St George, and VMC stations have the highest number of delays. These are all either transfer stations or are terminal stations (with the exception of Eglinton which is one of the busiest stations and the site of a future transfer station). We can also see that more Yonge-University line stations have have a large amount of delays, Kipling and Kennedy, which are are on the BD line have the most and third most delays. No stations from the Sheppard line made this list. We can further look into this by exploring the types of delays that are occurring at stations.
+
+```{r summary-stats-delays-causes}
+delay_causes <- subway_data |> 
+  group_by(`Code Description`) |> 
+  summarise(
+    Count = n(), 
+    `Average Delay Time` = mean(`Min Delay`)) |> 
+  arrange(desc(Count)) |> 
+  head(10)
+
+kable(delay_causes, caption = "Top 10 Most Frequent Delay Causes")
+```
+
+```{r treemap-delay-causes}
+library(treemapify)
+
+ggplot(delay_causes, aes(area = Count, fill = Count, label = paste(`Code Description`, "\n", "Count:", Count, "Delays", "\n", "Average Delay:", round(`Average Delay Time`, 2), "mins"))) +
+  geom_treemap() +
+  geom_treemap_text(colour = "white", place = "centre", grow = TRUE) +
+  scale_fill_gradient(low = "steelblue", high = "darkblue") +
+  labs(title = "Top 10 Reasons of Delay",
+       caption = "Figure 2: Data From City of Toronto Open Data Portal") +
+  theme_minimal() +
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5, face = "bold", size = 16))
+```
+The top reasons for subway delays in Toronto seem to be passenger-related incidents, with "Disorderly Patron" being the most frequent cause, accounting for 157 delays with an average delay of 6.85 minutes. Other notable causes include Passenger Assistance Alarm Activation (72 delays, 4.11 min avg) and OPTO (COMMS) Train Door Monitoring (50 delays, 6.9 min avg).
+
+We can also look at which delays took the most time total:
+
+```{r total-delay-time}
+delay_summary <- subway_data |> 
+  group_by(Code, `Code Description`) |> 
+  summarise(Total_Delay_Time = sum(`Min Delay`, na.rm = TRUE)) |> 
+  arrange(desc(Total_Delay_Time)) |> 
+  head(10)
+
+ggplot(delay_summary, aes(x = reorder(Code, Total_Delay_Time), y = Total_Delay_Time, fill = Total_Delay_Time)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(
+    title = "Top 10 Delay Causes by Total Delay Time",
+    x = "Delay Code",
+    y = "Total Delay Time (Minutes)",
+    fill = "Total Delay (min)",
+    caption = "Figure 3: Data From City of Toronto Open Data Portal"
+  ) +
+  theme_minimal() +
+  scale_fill_gradient(low = "steelblue", high = "darkblue") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+# Display table
+delay_summary |> 
+  select(Code, `Code Description`) |> 
+  kable(caption = "Delay Code Definitions")
+
+```
+
+The top delay causes by total delay time highlight disorderly patrons as the most significant issue, causing over 1,000 minutes of delays throughout the year. Other major contributors include unauthorized people at track level, and injured or ill customers, each accumulating several hundred minutes of delays. Passenger-related incidents, including assaults, alarms, and other disruptions, collectively contribute to substantial downtime. The difference we see with this and the last visualization is that a few of the most commonly occurring delays, such as the passenger alarm being activated and unsanitary vehicle are not in the top 10 of total delay time since the average time for those delays is much less.
+
+Finally, we can view the occurrence of delays distributed by the time of day at which they occur.
+
+```{r summary-stats-delays-hours}
+peak_summary <- subway_data |> 
+  group_by(`Time Category`) |> 
+    summarise(
+    `Total Delays` = n(),
+    `Average Delay Time` = round(mean(`Min Delay`, na.rm = TRUE), 2)
+  )
+
+peak_summary <- peak_summary |> 
+  mutate(`Average Number of Delays` = ifelse(`Time Category` == "Peak", 
+                                        `Total Delays` / 8, 
+                                        `Total Delays` / 14))
+
+kable(peak_summary, caption = "Delays During Peak vs Non-Peak Hours")
+```
+
+```{r histogram-delays-hours}
+ggplot(subway_data, aes(x = Hour, fill = `Time Category`)) +
+  geom_bar() +
+  labs(
+    title = "Number of Delays by Hour of the Day",
+    x = "Hour of the Day",
+    y = "Total Delays",
+    fill = "Time Category",
+    caption = "Figure 4: Data From City of Toronto Open Data Portal"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("Peak" = "darkred", "Non-Peak" = "darkblue"))
+```
+
+There is no data for 3 and 4 am as the subway is closed for those hours. There is a major peak in the number of delays during the afternoon (between 2 and 4 pm), with the highest delays occurring around 3pm. What is interesting is that while the number of delays is much higher during peak hours, the average time of each delay is almost the same.
+
+# Summary
+This analysis of TTC subway delays has provided several key insights into delay causes, timing patterns, and station-specific trends. The most frequent delay and the delay that has wasted the most amount of time this year is **Disorderly Patrons**, accounting for 157 recorded delays and taking a total of 1075.45 hours, much more than any other delay type. Other common delay types include passenger assistance alarms being activated, train door monitoring issues, and medical emergencies. However, when examining total delay time, disruptions such as unauthorized people at track level and injured or ill customer incidents accumulate significantly more system downtime, despite occurring less frequently.
+
+in terms of time-based patters, delays are more frequent during peak hours (7-9 AM, 3-7 PM) when the TTC is running more trains, with a noticeable spike at 3 PM. Interestingly, while peak hours have more delays, the average duration of each delay is similar to non-peak periods, suggestions that the nature of delays remains relatively consistent through the day. Additionally, certain stations such as Kipling, Bloor, Kennedy and Finch experience the highest number of delays, many of which are near major transfer or terminal stations.
+
+### Next Steps and Modeling Plan
+To build upon these findings, the final project will focus on:
+
+1. **Predictive Analysis:** 
+    * Use time series analysis (e.g. ARIMA, Prophet) to forecast future subway delays based on historical trends.
+    * Explore seasonal patterns in subway delays; e.g., *do mechanical issues spike in winter?*
+    * Investigate correlations between delays and external factors such as weather conditions, day of the week, or special events. Additional data sets can be found to do this.
+2. **Statistical and Machine Learning Models:**
+    * Conduct regression analysis to understand how factors like station type, peak hours, and delay cause influence delay duration.
+3. **Operational Optimization Strategies:**
+    * Provide data-driven recommendations for reducing subway delays, particularly at high-impact stations and peak hours.
+    * Identify whether increasing security presence at key stations could help reduce delays from disorderly pators and other passenger-related incidents.
+4. **Network Analysis:**
+    * Examining how delays propagate across the subway system and whether incidents on one line impact others.
+    
+    
+    
+    
