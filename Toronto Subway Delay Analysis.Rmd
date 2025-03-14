@@ -3,10 +3,10 @@ title: "Toronto Subway Delay Analysis: Causes, Timing, and Line-Specific Pattern
 author: "Avi Walia"
 date: "March 14, 2025"
 output:
-  github_document:
-    df_print: paged
   html_document:
     fig_width: 10
+  github_document:
+    df_print: paged
   pdf_document:
     fig_width: 10
 ---
